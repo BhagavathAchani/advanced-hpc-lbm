@@ -2,8 +2,8 @@
 
 EXE=d2q9-bgk
 
-CC=gcc
-CFLAGS= -O3 -fopenmp -march=broadwell
+CC=icx
+CFLAGS= -std=c99 -Wall -O3 -fopenmp -march=broadwell
 LIBS = -lm
 
 FINAL_STATE_FILE=./final_state.dat
