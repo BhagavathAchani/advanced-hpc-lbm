@@ -92,7 +92,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-int timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles);
+float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles);
 int accelerate_flow(const t_param params, t_speed *cells, int *obstacles);
 int propagate(const t_param params, t_speed *cells, t_speed *tmp_cells);
 int rebound(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles);
@@ -157,14 +157,14 @@ int main(int argc, char *argv[])
 
     for (int tt = 0; tt < params.maxIters; tt++)
     {
-        timestep(params, cells, tmp_cells, obstacles);
+        av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
 
         // Swap pointers
         t_speed *temp = cells;
         cells = tmp_cells;
         tmp_cells = temp;
 
-        av_vels[tt] = av_velocity(params, cells, obstacles);
+        // av_vels[tt] = av_velocity(params, cells, obstacles);
 #ifdef DEBUG
         printf("==timestep: %d==\n", tt);
         printf("av velocity: %.12E\n", av_vels[tt]);
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles)
+float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles)
 {
     accelerate_flow(params, cells, obstacles);
     // propagate(params, cells, tmp_cells);
@@ -208,6 +208,12 @@ int timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obst
     const float w0 = 4.f / 9.f;   /* weighting factor */
     const float w1 = 1.f / 9.f;   /* weighting factor */
     const float w2 = 1.f / 36.f;  /* weighting factor */
+
+    int tot_cells = 0; /* no. of cells used in calculation */
+    float tot_u;       /* accumulated magnitudes of velocity for each cell */
+
+    /* initialise */
+    tot_u = 0.f;
 
     for (int jj = 0; jj < params.ny; jj++)
     {
@@ -262,9 +268,12 @@ int timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obst
                 float u_x = (local_cell.speeds[1] + local_cell.speeds[5] + local_cell.speeds[8] - (local_cell.speeds[3] + local_cell.speeds[6] + local_cell.speeds[7])) / local_density;
                 /* compute y velocity component */
                 float u_y = (local_cell.speeds[2] + local_cell.speeds[5] + local_cell.speeds[6] - (local_cell.speeds[4] + local_cell.speeds[7] + local_cell.speeds[8])) / local_density;
-
                 /* velocity squared */
                 float u_sq = u_x * u_x + u_y * u_y;
+
+                tot_u += sqrtf((u_x * u_x) + (u_y * u_y));
+                /* increase counter of inspected cells */
+                ++tot_cells;
 
                 /* directional velocity components */
                 float u[NSPEEDS];
@@ -301,7 +310,9 @@ int timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obst
         }
     }
 
-    return EXIT_SUCCESS;
+    return tot_u / (float)tot_cells;
+
+    // return EXIT_SUCCESS;
 }
 
 int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
