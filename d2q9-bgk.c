@@ -339,7 +339,7 @@ int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
 
     /* modify the 2nd row of the grid */
     int jj = params.ny - 2;
-
+#pragma omp simd
     for (int ii = 0; ii < params.nx; ii++)
     {
         /* if the cell is not occupied and
@@ -491,6 +491,7 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
     /* loop over all non-blocked cells */
     for (int jj = 0; jj < params.ny; jj++)
     {
+#pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
             /* ignore occupied cells */
@@ -768,6 +769,7 @@ float total_density(const t_param params, t_speed *cells)
 
     for (int jj = 0; jj < params.ny; jj++)
     {
+#pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
             // Sum all speed components for the current cell
