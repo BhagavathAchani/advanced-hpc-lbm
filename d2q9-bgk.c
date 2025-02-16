@@ -55,6 +55,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <omp.h>
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -489,25 +490,27 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
 #pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
+            int index = ii + jj * params.nx;
+
             /* ignore occupied cells */
-            if (!obstacles[ii + jj * params.nx])
+            if (!obstacles[index])
             {
                 /* local density total */
                 float local_density = 0.f;
-                local_density += cells->speed_0[ii + jj * params.nx]; // speed[0]
-                local_density += cells->speed_1[ii + jj * params.nx]; // speed[1]
-                local_density += cells->speed_2[ii + jj * params.nx]; // speed[2]
-                local_density += cells->speed_3[ii + jj * params.nx]; // speed[3]
-                local_density += cells->speed_4[ii + jj * params.nx]; // speed[4]
-                local_density += cells->speed_5[ii + jj * params.nx]; // speed[5]
-                local_density += cells->speed_6[ii + jj * params.nx]; // speed[6]
-                local_density += cells->speed_7[ii + jj * params.nx]; // speed[7]
-                local_density += cells->speed_8[ii + jj * params.nx]; // speed[8]
+                local_density += cells->speed_0[index]; // speed[0]
+                local_density += cells->speed_1[index]; // speed[1]
+                local_density += cells->speed_2[index]; // speed[2]
+                local_density += cells->speed_3[index]; // speed[3]
+                local_density += cells->speed_4[index]; // speed[4]
+                local_density += cells->speed_5[index]; // speed[5]
+                local_density += cells->speed_6[index]; // speed[6]
+                local_density += cells->speed_7[index]; // speed[7]
+                local_density += cells->speed_8[index]; // speed[8]
 
                 /* x-component of velocity */
-                float u_x = (cells->speed_1[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx] - (cells->speed_3[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] + cells->speed_7[ii + jj * params.nx])) / local_density;
+                float u_x = (cells->speed_1[index] + cells->speed_5[index] + cells->speed_8[index] - (cells->speed_3[index] + cells->speed_6[index] + cells->speed_7[index])) / local_density;
                 /* compute y velocity component */
-                float u_y = (cells->speed_2[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] - (cells->speed_4[ii + jj * params.nx] + cells->speed_7[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx])) / local_density;
+                float u_y = (cells->speed_2[index] + cells->speed_5[index] + cells->speed_6[index] - (cells->speed_4[index] + cells->speed_7[index] + cells->speed_8[index])) / local_density;
                 /* accumulate the norm of x- and y- velocity components */
                 tot_u += sqrtf((u_x * u_x) + (u_y * u_y));
                 /* increase counter of inspected cells */
@@ -805,8 +808,9 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
     {
         for (int ii = 0; ii < params.nx; ii++)
         {
+            int index = ii + jj * params.nx;
             /* an occupied cell */
-            if (obstacles[ii + jj * params.nx])
+            if (obstacles[index])
             {
                 u_x = u_y = u = 0.f;
                 pressure = params.density * c_sq;
@@ -815,20 +819,20 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
             else
             {
                 local_density = 0.f;
-                local_density += cells->speed_0[ii + jj * params.nx]; // speed[0]
-                local_density += cells->speed_1[ii + jj * params.nx]; // speed[1]
-                local_density += cells->speed_2[ii + jj * params.nx]; // speed[2]
-                local_density += cells->speed_3[ii + jj * params.nx]; // speed[3]
-                local_density += cells->speed_4[ii + jj * params.nx]; // speed[4]
-                local_density += cells->speed_5[ii + jj * params.nx]; // speed[5]
-                local_density += cells->speed_6[ii + jj * params.nx]; // speed[6]
-                local_density += cells->speed_7[ii + jj * params.nx]; // speed[7]
-                local_density += cells->speed_8[ii + jj * params.nx]; // speed[8]
+                local_density += cells->speed_0[index]; // speed[0]
+                local_density += cells->speed_1[index]; // speed[1]
+                local_density += cells->speed_2[index]; // speed[2]
+                local_density += cells->speed_3[index]; // speed[3]
+                local_density += cells->speed_4[index]; // speed[4]
+                local_density += cells->speed_5[index]; // speed[5]
+                local_density += cells->speed_6[index]; // speed[6]
+                local_density += cells->speed_7[index]; // speed[7]
+                local_density += cells->speed_8[index]; // speed[8]
 
                 /* compute x velocity component */
-                u_x = (cells->speed_1[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx] - (cells->speed_3[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] + cells->speed_7[ii + jj * params.nx])) / local_density;
+                u_x = (cells->speed_1[index] + cells->speed_5[index] + cells->speed_8[index] - (cells->speed_3[index] + cells->speed_6[index] + cells->speed_7[index])) / local_density;
                 /* compute y velocity component */
-                u_y = (cells->speed_2[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] - (cells->speed_4[ii + jj * params.nx] + cells->speed_7[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx])) / local_density;
+                u_y = (cells->speed_2[index] + cells->speed_5[index] + cells->speed_6[index] - (cells->speed_4[index] + cells->speed_7[index] + cells->speed_8[index])) / local_density;
                 /* compute norm of velocity */
                 u = sqrtf((u_x * u_x) + (u_y * u_y));
                 /* compute pressure */
