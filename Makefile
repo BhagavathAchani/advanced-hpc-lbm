@@ -2,7 +2,7 @@
 
 EXE=d2q9-bgk
 
-CC=icx
+CC=icc
 CFLAGS= -std=c99 -Wall -O3 -fopenmp -march=broadwell
 
 FINAL_STATE_FILE=./final_state.dat

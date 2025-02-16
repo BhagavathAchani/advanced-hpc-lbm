@@ -236,12 +236,13 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
             int x_e = (ii + 1) % params.nx;
             int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
             int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
+            int index = ii + jj * params.nx;
 
             /* propagate densities from neighbouring cells, following
             ** appropriate directions of travel and writing into
             ** scratch space grid */
 
-            float speed_0 = cells->speed_0[ii + jj * params.nx];
+            float speed_0 = cells->speed_0[index];
             float speed_1 = cells->speed_1[x_w + jj * params.nx];
             float speed_2 = cells->speed_2[ii + y_s * params.nx];
             float speed_3 = cells->speed_3[x_e + jj * params.nx];
@@ -251,18 +252,18 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
             float speed_7 = cells->speed_7[x_e + y_n * params.nx];
             float speed_8 = cells->speed_8[x_w + y_n * params.nx];
 
-            if (obstacles[jj * params.nx + ii])
+            if (obstacles[index])
             {
                 /* called after propagate, so taking values from scratch space
                 ** mirroring, and writing into main grid */
-                tmp_cells->speed_1[ii + jj * params.nx] = speed_3;
-                tmp_cells->speed_2[ii + jj * params.nx] = speed_4;
-                tmp_cells->speed_3[ii + jj * params.nx] = speed_1;
-                tmp_cells->speed_4[ii + jj * params.nx] = speed_2;
-                tmp_cells->speed_5[ii + jj * params.nx] = speed_7;
-                tmp_cells->speed_6[ii + jj * params.nx] = speed_8;
-                tmp_cells->speed_7[ii + jj * params.nx] = speed_5;
-                tmp_cells->speed_8[ii + jj * params.nx] = speed_6;
+                tmp_cells->speed_1[index] = speed_3;
+                tmp_cells->speed_2[index] = speed_4;
+                tmp_cells->speed_3[index] = speed_1;
+                tmp_cells->speed_4[index] = speed_2;
+                tmp_cells->speed_5[index] = speed_7;
+                tmp_cells->speed_6[index] = speed_8;
+                tmp_cells->speed_7[index] = speed_5;
+                tmp_cells->speed_8[index] = speed_6;
             }
             else
             {
@@ -306,17 +307,16 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
                 d_equ[7] = w2 * local_density * (1.f + u[7] / c_sq + (u[7] * u[7]) / (2.f * c_sq * c_sq) - u_sq / (2.f * c_sq));
                 d_equ[8] = w2 * local_density * (1.f + u[8] / c_sq + (u[8] * u[8]) / (2.f * c_sq * c_sq) - u_sq / (2.f * c_sq));
 
-
                 /* relaxation step */
-                tmp_cells->speed_0[ii + jj * params.nx] = speed_0 + params.omega * (d_equ[0] - speed_0);
-                tmp_cells->speed_1[ii + jj * params.nx] = speed_1 + params.omega * (d_equ[1] - speed_1);
-                tmp_cells->speed_2[ii + jj * params.nx] = speed_2 + params.omega * (d_equ[2] - speed_2);
-                tmp_cells->speed_3[ii + jj * params.nx] = speed_3 + params.omega * (d_equ[3] - speed_3);
-                tmp_cells->speed_4[ii + jj * params.nx] = speed_4 + params.omega * (d_equ[4] - speed_4);
-                tmp_cells->speed_5[ii + jj * params.nx] = speed_5 + params.omega * (d_equ[5] - speed_5);
-                tmp_cells->speed_6[ii + jj * params.nx] = speed_6 + params.omega * (d_equ[6] - speed_6);
-                tmp_cells->speed_7[ii + jj * params.nx] = speed_7 + params.omega * (d_equ[7] - speed_7);
-                tmp_cells->speed_8[ii + jj * params.nx] = speed_8 + params.omega * (d_equ[8] - speed_8);
+                tmp_cells->speed_0[index] = speed_0 + params.omega * (d_equ[0] - speed_0);
+                tmp_cells->speed_1[index] = speed_1 + params.omega * (d_equ[1] - speed_1);
+                tmp_cells->speed_2[index] = speed_2 + params.omega * (d_equ[2] - speed_2);
+                tmp_cells->speed_3[index] = speed_3 + params.omega * (d_equ[3] - speed_3);
+                tmp_cells->speed_4[index] = speed_4 + params.omega * (d_equ[4] - speed_4);
+                tmp_cells->speed_5[index] = speed_5 + params.omega * (d_equ[5] - speed_5);
+                tmp_cells->speed_6[index] = speed_6 + params.omega * (d_equ[6] - speed_6);
+                tmp_cells->speed_7[index] = speed_7 + params.omega * (d_equ[7] - speed_7);
+                tmp_cells->speed_8[index] = speed_8 + params.omega * (d_equ[8] - speed_8);
             }
         }
     }
@@ -643,6 +643,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 
     for (int jj = 0; jj < params->ny; jj++)
     {
+#pragma omp simd
         for (int ii = 0; ii < params->nx; ii++)
         {
             /* centre */
