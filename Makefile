@@ -3,7 +3,7 @@
 EXE=d2q9-bgk
 
 CC=icc
-CFLAGS= -std=c99 -Wall -O3 -fopenmp -march=broadwell -qopt-report=5 -qopt-report-phase=vec
+CFLAGS= -std=c11 -Wall -O3 -fopenmp -march=broadwell -qopt-report=5 -qopt-report-phase=vec
 
 FINAL_STATE_FILE=./final_state.dat
 AV_VELS_FILE=./av_vels.dat
