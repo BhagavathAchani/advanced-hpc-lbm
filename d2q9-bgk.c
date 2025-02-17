@@ -239,7 +239,7 @@ float timestep(const t_param params, t_speed *restrict cells, t_speed *restrict 
 
     for (int jj = 0; jj < params.ny; jj++)
     {
-#pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+#pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64) reduction(+ : tot_u, tot_cells)
         for (int ii = 0; ii < params.nx; ii++)
         {
             /* determine indices of axis-direction neighbours
@@ -551,18 +551,19 @@ int initialise(const char *paramfile, const char *obstaclefile,
 #pragma omp simd
         for (int ii = 0; ii < params->nx; ii++)
         {
+            int index = ii + jj * params->nx;
             /* centre */
-            (*cells_ptr)->speed_0[ii + jj * params->nx] = w0;
+            (*cells_ptr)->speed_0[index] = w0;
             /* axis dire->speed_0ctions */
-            (*cells_ptr)->speed_1[ii + jj * params->nx] = w1;
-            (*cells_ptr)->speed_2[ii + jj * params->nx] = w1;
-            (*cells_ptr)->speed_3[ii + jj * params->nx] = w1;
-            (*cells_ptr)->speed_4[ii + jj * params->nx] = w1;
+            (*cells_ptr)->speed_1[index] = w1;
+            (*cells_ptr)->speed_2[index] = w1;
+            (*cells_ptr)->speed_3[index] = w1;
+            (*cells_ptr)->speed_4[index] = w1;
             /* diagonals->speed_0 */
-            (*cells_ptr)->speed_5[ii + jj * params->nx] = w2;
-            (*cells_ptr)->speed_6[ii + jj * params->nx] = w2;
-            (*cells_ptr)->speed_7[ii + jj * params->nx] = w2;
-            (*cells_ptr)->speed_8[ii + jj * params->nx] = w2;
+            (*cells_ptr)->speed_5[index] = w2;
+            (*cells_ptr)->speed_6[index] = w2;
+            (*cells_ptr)->speed_7[index] = w2;
+            (*cells_ptr)->speed_8[index] = w2;
         }
     }
 
