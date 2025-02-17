@@ -1,0 +1,133 @@
+d2q9-bgk.c:138:5: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+int main(int argc, char *argv[])
+    ^
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:172:5
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:172:5
+d2q9-bgk.c:138:5: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+int main(int argc, char *argv[])
+    ^
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:172:5
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:172:5
+d2q9-bgk.c:138:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+int main(int argc, char *argv[])
+    ^
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:172:5
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:381:1
+d2q9-bgk.c:138:5: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+int main(int argc, char *argv[])
+    ^
+d2q9-bgk.c:138:5: note: could not determine the original source location for d2q9-bgk.c:381:1
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:538:1
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:538:1
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:559:9
+d2q9-bgk.c:416:5: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:559:9
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:416:5: remark: loop not vectorized: loop contains a switch statement [-Rpass-analysis=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:22
+d2q9-bgk.c:416:5: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:22
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:416:5: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:416:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+int initialise(const char *paramfile, const char *obstaclefile,
+    ^
+d2q9-bgk.c:416:5: note: could not determine the original source location for d2q9-bgk.c:575:5
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:349:1
+float timestep(const t_param params, t_speed *restrict cells, t_speed *restrict tmp_cells, int *restrict obstacles)
+      ^
+d2q9-bgk.c:214:7: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]
+float timestep(const t_param params, t_speed *restrict cells, t_speed *restrict tmp_cells, int *restrict obstacles)
+      ^
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:214:7: remark: vectorized loop (vectorization width: 8, interleaved count: 1) [-Rpass=loop-vectorize]
+float timestep(const t_param params, t_speed *restrict cells, t_speed *restrict tmp_cells, int *restrict obstacles)
+      ^
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:242:1
+d2q9-bgk.c:214:7: remark: vectorized loop (vectorization width: 8, interleaved count: 2) [-Rpass=loop-vectorize]
+float timestep(const t_param params, t_speed *restrict cells, t_speed *restrict tmp_cells, int *restrict obstacles)
+      ^
+d2q9-bgk.c:214:7: note: could not determine the original source location for d2q9-bgk.c:242:1
+d2q9-bgk.c:647:7: note: could not determine the original source location for d2q9-bgk.c:381:1
+float calc_reynolds(const t_param params, t_speed *cells, int *obstacles)
+      ^
+d2q9-bgk.c:647:7: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+float calc_reynolds(const t_param params, t_speed *cells, int *obstacles)
+      ^
+d2q9-bgk.c:647:7: note: could not determine the original source location for d2q9-bgk.c:381:1
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:732:13
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:732:13
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:698:9
+d2q9-bgk.c:679:5: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:698:9
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:698:9
+d2q9-bgk.c:679:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:698:9
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:747:9
+d2q9-bgk.c:679:5: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:747:9
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:745:5
+d2q9-bgk.c:679:5: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:745:5
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:745:5
+d2q9-bgk.c:679:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+    ^
+d2q9-bgk.c:679:5: note: could not determine the original source location for d2q9-bgk.c:745:5
+d2q9-bgk.c:341:5: note: could not determine the original source location for d2q9-bgk.c:349:1
+int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
+    ^
+d2q9-bgk.c:341:5: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]
+int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
+    ^
+d2q9-bgk.c:341:5: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:341:5: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:341:5: remark: vectorized loop (vectorization width: 8, interleaved count: 1) [-Rpass=loop-vectorize]
+int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
+    ^
+d2q9-bgk.c:341:5: note: could not determine the original source location for d2q9-bgk.c:349:1
+d2q9-bgk.c:370:7: note: could not determine the original source location for d2q9-bgk.c:381:1
+float av_velocity(const t_param params, t_speed *cells, int *obstacles)
+      ^
+d2q9-bgk.c:370:7: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+float av_velocity(const t_param params, t_speed *cells, int *obstacles)
+      ^
+d2q9-bgk.c:370:7: note: could not determine the original source location for d2q9-bgk.c:381:1
+d2q9-bgk.c:654:7: note: could not determine the original source location for d2q9-bgk.c:660:1
+float total_density(const t_param params, t_speed *cells)
+      ^
+d2q9-bgk.c:654:7: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+float total_density(const t_param params, t_speed *cells)
+      ^
+d2q9-bgk.c:654:7: note: could not determine the original source location for d2q9-bgk.c:660:1

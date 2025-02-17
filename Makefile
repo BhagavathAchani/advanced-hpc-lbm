@@ -2,8 +2,8 @@
 
 EXE=d2q9-bgk
 
-CC=icc
-CFLAGS= -std=c11 -Wall -O3 -fopenmp -march=broadwell -qopt-report=5 -qopt-report-phase=vec
+CC=icx
+CFLAGS= -std=c11 -Wall -O3 -fopenmp -march=broadwell -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -save-temps
 
 FINAL_STATE_FILE=./final_state.dat
 AV_VELS_FILE=./av_vels.dat
