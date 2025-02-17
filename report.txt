@@ -1,0 +1,59 @@
+icx -std=c11 -Wall -Ofast -fopenmp -march=broadwell -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize d2q9-bgk.c  -o d2q9-bgk
+d2q9-bgk.c:172:5: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+    for (int tt = 0; tt < params.maxIters; tt++)
+    ^
+d2q9-bgk.c:172:5: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+d2q9-bgk.c:172:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+d2q9-bgk.c:393:1: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+#pragma omp simd
+^
+d2q9-bgk.c:550:1: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+#pragma omp simd
+^
+d2q9-bgk.c:571:9: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+        for (int ii = 0; ii < params->nx; ii++)
+        ^
+d2q9-bgk.c:587:5: remark: loop not vectorized: loop contains a switch statement [-Rpass-analysis=loop-vectorize]
+    while ((retval = fscanf(fp, "%d %d %d\n", &xx, &yy, &blocked)) != EOF)
+    ^
+d2q9-bgk.c:587:22: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+    while ((retval = fscanf(fp, "%d %d %d\n", &xx, &yy, &blocked)) != EOF)
+                     ^
+d2q9-bgk.c:587:5: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+    while ((retval = fscanf(fp, "%d %d %d\n", &xx, &yy, &blocked)) != EOF)
+    ^
+d2q9-bgk.c:587:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+d2q9-bgk.c:360:1: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]
+#pragma omp simd aligned(speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+^
+d2q9-bgk.c:360:1: remark: vectorized loop (vectorization width: 8, interleaved count: 1) [-Rpass=loop-vectorize]
+d2q9-bgk.c:242:1: remark: vectorized loop (vectorization width: 8, interleaved count: 2) [-Rpass=loop-vectorize]
+#pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+^
+d2q9-bgk.c:393:1: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+#pragma omp simd
+^
+d2q9-bgk.c:744:13: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+            fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[ii + params.nx * jj]);
+            ^
+d2q9-bgk.c:710:9: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+        for (int ii = 0; ii < params.nx; ii++)
+        ^
+d2q9-bgk.c:710:9: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+d2q9-bgk.c:759:9: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+        fprintf(fp, "%d:\t%.12E\n", ii, av_vels[ii]);
+        ^
+d2q9-bgk.c:757:5: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+    for (int ii = 0; ii < params.maxIters; ii++)
+    ^
+d2q9-bgk.c:757:5: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+d2q9-bgk.c:360:1: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]
+#pragma omp simd aligned(speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+^
+d2q9-bgk.c:360:1: remark: vectorized loop (vectorization width: 8, interleaved count: 1) [-Rpass=loop-vectorize]
+d2q9-bgk.c:393:1: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+#pragma omp simd
+^
+d2q9-bgk.c:672:1: remark: vectorized loop (vectorization width: 8, interleaved count: 4) [-Rpass=loop-vectorize]
+#pragma omp simd
+^
