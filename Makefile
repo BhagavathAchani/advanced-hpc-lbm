@@ -3,7 +3,8 @@
 EXE=d2q9-bgk
 
 CC=icx
-CFLAGS= -std=c11 -Wall -Ofast -fopenmp -march=broadwell -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
+CFLAGS= -std=c11 -Wall -Ofast -fopenmp -march=broadwell
+#CFLAGS= -std=c11 -Wall -Ofast -fopenmp -march=broadwell -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
 
 FINAL_STATE_FILE=./final_state.dat
 AV_VELS_FILE=./av_vels.dat
