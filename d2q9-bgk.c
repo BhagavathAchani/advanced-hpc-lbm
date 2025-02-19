@@ -272,74 +272,60 @@ float timestep(const t_param params, float *restrict speed_0, float *restrict sp
             float speed6 = speed_6[x_e + y_s * params.nx];
             float speed7 = speed_7[x_e + y_n * params.nx];
             float speed8 = speed_8[x_w + y_n * params.nx];
-            if (obstacles[index])
-            {
-                /* called after propagate, so taking values from scratch space
-                 ** mirroring, and writing into main grid */
-                tmp_cells_speed_1[index] = speed3;
-                tmp_cells_speed_2[index] = speed4;
-                tmp_cells_speed_3[index] = speed1;
-                tmp_cells_speed_4[index] = speed2;
-                tmp_cells_speed_5[index] = speed7;
-                tmp_cells_speed_6[index] = speed8;
-                tmp_cells_speed_7[index] = speed5;
-                tmp_cells_speed_8[index] = speed6;
-            }
-            else
-            {
-                float is_obstacle = (float)(obstacles[index] != 0);
-                float is_fluid = 1.0f - is_obstacle;
 
-                /* compute local density total */
-                float local_density = speed0 + speed1 + speed2 + speed3 + speed4 + speed5 + speed6 + speed7 + speed8;
-                float inv_local_density = 1.f / local_density;
+            float is_obstacle = (float)(obstacles[index] != 0);
+            float is_fluid = 1.0f - is_obstacle;
 
-                /* compute x velocity component */
-                float u_x = (speed1 + speed5 + speed8 - (speed3 + speed6 + speed7)) * inv_local_density;
-                float u_y = (speed2 + speed5 + speed6 - (speed4 + speed7 + speed8)) * inv_local_density;
-                float u_sq = u_x * u_x + u_y * u_y;
+            /* compute local density total */
+            float local_density = speed0 + speed1 + speed2 + speed3 + speed4 + speed5 + speed6 + speed7 + speed8;
+            float inv_local_density = 1.f / local_density;
 
-                tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
-                tot_cells += (int)is_fluid;
+            /* compute x velocity component */
+            float u_x = (speed1 + speed5 + speed8 - (speed3 + speed6 + speed7)) * inv_local_density;
+            float u_y = (speed2 + speed5 + speed6 - (speed4 + speed7 + speed8)) * inv_local_density;
+            float u_sq = u_x * u_x + u_y * u_y;
+            float constant = u_sq * inv_2_c_sq;
 
-                /* directional velocity components */
-                float u[NSPEEDS];
-                u[1] = u_x;        /* east */
-                u[2] = u_y;        /* north */
-                u[3] = -u_x;       /* west */
-                u[4] = -u_y;       /* south */
-                u[5] = u_x + u_y;  /* north-east */
-                u[6] = -u_x + u_y; /* north-west */
-                u[7] = -u_x - u_y; /* south-west */
-                u[8] = u_x - u_y;  /* south-east */
+            tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
+            tot_cells += (int)is_fluid;
 
-                /* equilibrium densities */
-                float d_equ[NSPEEDS];
-                /* zero velocity density: weight w0 */
-                d_equ[0] = w0 * local_density * (1.f - u_sq * inv_2_c_sq);
+            /* directional velocity components */
+            float u[NSPEEDS];
+            u[1] = u_x;        /* east */
+            u[2] = u_y;        /* north */
+            u[3] = -u_x;       /* west */
+            u[4] = -u_y;       /* south */
+            u[5] = u_x + u_y;  /* north-east */
+            u[6] = -u_x + u_y; /* north-west */
+            u[7] = -u_x - u_y; /* south-west */
+            u[8] = u_x - u_y;  /* south-east */
 
-                /* axis speeds: weight w1 */
-                d_equ[1] = w1 * local_density * (1.f + u[1] * inv_c_sq + (u[1] * u[1]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[2] = w1 * local_density * (1.f + u[2] * inv_c_sq + (u[2] * u[2]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[3] = w1 * local_density * (1.f + u[3] * inv_c_sq + (u[3] * u[3]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[4] = w1 * local_density * (1.f + u[4] * inv_c_sq + (u[4] * u[4]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                /* diagonal speeds: weight w2 */
-                d_equ[5] = w2 * local_density * (1.f + u[5] * inv_c_sq + (u[5] * u[5]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[6] = w2 * local_density * (1.f + u[6] * inv_c_sq + (u[6] * u[6]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[7] = w2 * local_density * (1.f + u[7] * inv_c_sq + (u[7] * u[7]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
-                d_equ[8] = w2 * local_density * (1.f + u[8] * inv_c_sq + (u[8] * u[8]) * inv_c_sq_sq * 0.5f - u_sq * inv_2_c_sq);
+            /* equilibrium densities */
+            float d_equ[NSPEEDS];
+            /* zero velocity density: weight w0 */
+            d_equ[0] = w0 * local_density * (1.f - constant);
 
-                /* relaxation step */
-                tmp_cells_speed_0[index] = speed0 + params.omega * (d_equ[0] - speed0);
-                tmp_cells_speed_1[index] = speed1 + params.omega * (d_equ[1] - speed1);
-                tmp_cells_speed_2[index] = speed2 + params.omega * (d_equ[2] - speed2);
-                tmp_cells_speed_3[index] = speed3 + params.omega * (d_equ[3] - speed3);
-                tmp_cells_speed_4[index] = speed4 + params.omega * (d_equ[4] - speed4);
-                tmp_cells_speed_5[index] = speed5 + params.omega * (d_equ[5] - speed5);
-                tmp_cells_speed_6[index] = speed6 + params.omega * (d_equ[6] - speed6);
-                tmp_cells_speed_7[index] = speed7 + params.omega * (d_equ[7] - speed7);
-                tmp_cells_speed_8[index] = speed8 + params.omega * (d_equ[8] - speed8);
-            }
+            /* axis speeds: weight w1 */
+            d_equ[1] = w1 * local_density * (1.f + u[1] * inv_c_sq + (u[1] * u[1]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[2] = w1 * local_density * (1.f + u[2] * inv_c_sq + (u[2] * u[2]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[3] = w1 * local_density * (1.f + u[3] * inv_c_sq + (u[3] * u[3]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[4] = w1 * local_density * (1.f + u[4] * inv_c_sq + (u[4] * u[4]) * inv_c_sq_sq * 0.5f - constant);
+            /* diagonal speeds: weight w2 */
+            d_equ[5] = w2 * local_density * (1.f + u[5] * inv_c_sq + (u[5] * u[5]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[6] = w2 * local_density * (1.f + u[6] * inv_c_sq + (u[6] * u[6]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[7] = w2 * local_density * (1.f + u[7] * inv_c_sq + (u[7] * u[7]) * inv_c_sq_sq * 0.5f - constant);
+            d_equ[8] = w2 * local_density * (1.f + u[8] * inv_c_sq + (u[8] * u[8]) * inv_c_sq_sq * 0.5f - constant);
+
+            /* relaxation step with mask-based blending between obstacle and fluid behavior */
+            tmp_cells_speed_0[index] = is_obstacle * speed0 + is_fluid * (speed0 + params.omega * (d_equ[0] - speed0));
+            tmp_cells_speed_1[index] = is_obstacle * speed3 + is_fluid * (speed1 + params.omega * (d_equ[1] - speed1));
+            tmp_cells_speed_2[index] = is_obstacle * speed4 + is_fluid * (speed2 + params.omega * (d_equ[2] - speed2));
+            tmp_cells_speed_3[index] = is_obstacle * speed1 + is_fluid * (speed3 + params.omega * (d_equ[3] - speed3));
+            tmp_cells_speed_4[index] = is_obstacle * speed2 + is_fluid * (speed4 + params.omega * (d_equ[4] - speed4));
+            tmp_cells_speed_5[index] = is_obstacle * speed7 + is_fluid * (speed5 + params.omega * (d_equ[5] - speed5));
+            tmp_cells_speed_6[index] = is_obstacle * speed8 + is_fluid * (speed6 + params.omega * (d_equ[6] - speed6));
+            tmp_cells_speed_7[index] = is_obstacle * speed5 + is_fluid * (speed7 + params.omega * (d_equ[7] - speed7));
+            tmp_cells_speed_8[index] = is_obstacle * speed6 + is_fluid * (speed8 + params.omega * (d_equ[8] - speed8));
         }
     }
 
