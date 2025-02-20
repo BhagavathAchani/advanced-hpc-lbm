@@ -19,18 +19,16 @@ echo `echo $SLURM_JOB_NODELIST | uniq`
 
 export OMP_PROC_BIND=close
 export OMP_PLACES=cores
+export OMP_NUM_THREADS=28
 
-for threads in {1..28}; do
-    export OMP_NUM_THREADS=$threads
-    echo "Running with $OMP_NUM_THREADS threads"
-    
-    ./d2q9-bgk input_128x128.params obstacles_128x128.dat
-    ./d2q9-bgk input_128x256.params obstacles_128x256.dat
-    ./d2q9-bgk input_256x256.params obstacles_256x256.dat
-    ./d2q9-bgk input_1024x1024.params obstacles_1024x1024.dat
+# ./d2q9-bgk input_128x128.params obstacles_128x128.dat
+# ./d2q9-bgk input_128x256.params obstacles_128x256.dat
+# ./d2q9-bgk input_256x256.params obstacles_256x256.dat
+# ./d2q9-bgk input_1024x1024.params obstacles_1024x1024.dat
 
-    echo "                                                "
-    echo "================================================"
-    echo "                                                "
-done
-´
+perf stat -e cycles,instructions,cache-references,cache-misses,branch-misses,\
+L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,\
+L2_rqsts.all_demand_miss,L2_rqsts.references,\
+LLC-loads,LLC-load-misses,LLC-stores,\
+dTLB-loads,dTLB-load-misses,dTLB-stores \
+./d2q9-bgk input_128x128.params obstacles_128x128.dat
