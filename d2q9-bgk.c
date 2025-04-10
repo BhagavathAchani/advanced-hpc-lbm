@@ -56,6 +56,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <omp.h>
+#include <mpi.h>
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -99,7 +100,7 @@ typedef struct
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char *paramfile, const char *obstaclefile,
                t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-               int **obstacles_ptr, float **av_vels_ptr);
+               int **obstacles_ptr, float **av_vels_ptr, int rank, int size);
 
 /*
 ** The main calculation methods.
@@ -142,6 +143,14 @@ void usage(const char *exe);
 */
 int main(int argc, char *argv[])
 {
+    // IDK yet why this
+    //  MPI_Status status;
+
+    MPI_Init(&argc, &argv);
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     char *paramfile = NULL;                                                            /* name of the input parameter file */
     char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
     t_param params;                                                                    /* struct to hold parameter values */
@@ -167,7 +176,7 @@ int main(int argc, char *argv[])
     gettimeofday(&timstr, NULL);
     tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
     init_tic = tot_tic;
-    initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+    initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels, rank, size);
 
     /* Init time stops here, compute time starts*/
     gettimeofday(&timstr, NULL);
@@ -215,6 +224,7 @@ int main(int argc, char *argv[])
     write_values(params, cells, obstacles, av_vels);
     finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
 
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }
 
@@ -241,16 +251,16 @@ float timestep(const t_param params, float *restrict speed_0, float *restrict sp
     int tot_cells = 0; /* no. of cells used in calculation */
     float tot_u = 0.f; /* accumulated magnitudes of velocity for each cell */
 
-#pragma omp parallel for reduction(+ : tot_u, tot_cells)
+    // #pragma omp parallel for reduction(+ : tot_u, tot_cells)
     for (int jj = 0; jj < params.ny; jj++)
     {
         int y_n = (jj + 1) % params.ny;
         int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
 
-#pragma omp simd reduction(+ : tot_u, tot_cells) aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, \
-                                                             tmp_cells_speed_0, tmp_cells_speed_1, tmp_cells_speed_2, tmp_cells_speed_3,  \
-                                                             tmp_cells_speed_4, tmp_cells_speed_5, tmp_cells_speed_6, tmp_cells_speed_7,  \
-                                                             tmp_cells_speed_8 : 64) simdlen(8)
+        // #pragma omp simd reduction(+ : tot_u, tot_cells) aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, \
+//                                                              tmp_cells_speed_0, tmp_cells_speed_1, tmp_cells_speed_2, tmp_cells_speed_3,  \
+//                                                              tmp_cells_speed_4, tmp_cells_speed_5, tmp_cells_speed_6, tmp_cells_speed_7,  \
+//                                                              tmp_cells_speed_8 : 64) simdlen(8)
         for (int ii = 0; ii < params.nx; ii++)
         {
             /* determine indices of axis-direction neighbours
@@ -343,7 +353,7 @@ int accelerate_flow(const t_param params, float *restrict speed_0, float *restri
     /* modify the 2nd row of the grid */
     int jj = params.ny - 2;
 
-#pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+    // #pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
     for (int ii = 0; ii < params.nx; ii++)
     {
         int index = ii + jj * params.nx;
@@ -372,7 +382,7 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
     /* initialise */
     tot_u = 0.f;
     /* loop over all non-blocked cells */
-#pragma omp for
+    // #pragma omp for
     for (int jj = 0; jj < params.ny; jj++)
     {
         for (int ii = 0; ii < params.nx; ii++)
@@ -409,7 +419,7 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
 
 int initialise(const char *paramfile, const char *obstaclefile,
                t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-               int **obstacles_ptr, float **av_vels_ptr)
+               int **obstacles_ptr, float **av_vels_ptr, int rank, int size)
 {
     char message[1024]; /* message buffer */
     FILE *fp;           /* file pointer */
@@ -529,7 +539,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 
     for (int jj = 0; jj < params->ny; jj++)
     {
-#pragma omp simd
+        // #pragma omp simd
         for (int ii = 0; ii < params->nx; ii++)
         {
             int index = ii + jj * params->nx;
@@ -652,7 +662,7 @@ float total_density(const t_param params, t_speed *cells)
 
     for (int jj = 0; jj < params.ny; jj++)
     {
-#pragma omp simd
+        // #pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
             int index = ii + jj * params.nx;

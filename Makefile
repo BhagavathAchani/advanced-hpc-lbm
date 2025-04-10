@@ -2,7 +2,7 @@
 
 EXE=d2q9-bgk
 
-CC=icx
+CC=mpiicx
 # CFLAGS= -std=c11 -Wall -Ofast -fopenmp -march=broadwell
 CFLAGS= -std=c11 -Wall -Ofast -qopenmp -march=broadwell -mtune=broadwell
 
