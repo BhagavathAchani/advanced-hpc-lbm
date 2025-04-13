@@ -10,7 +10,7 @@
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=28
 #SBATCH --cpus-per-task=1
-´
+
 
 
 echo Running on host `hostname`

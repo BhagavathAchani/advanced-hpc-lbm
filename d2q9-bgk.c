@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
         cells = tmp_cells;
         tmp_cells = temp;
 
-        // av_vels[tt] = av_velocity(params, cells, obstacles);
+// av_vels[tt] = av_velocity(params, cells, obstacles);
 #ifdef DEBUG
         printf("==timestep: %d==\n", tt);
         printf("av velocity: %.12E\n", av_vels[tt]);
@@ -362,16 +362,42 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
         int tag_up = i + 10 * 0;
         int tag_down = i + 10 * 1;
 
-        // Send top row to top_rank, receive top halo from top_rank
-        MPI_Isend(&speeds[i][top_row * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
-        MPI_Irecv(&speeds[i][top_halo * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
+        MPI_Sendrecv(&speeds[i][rank_info.local_ny * params.nx],
+                     params.nx,
+                     MPI_FLOAT,
+                     rank_info.bot_rank,
+                     i,
+                     &speeds[i][0],
+                     params.nx,
+                     MPI_FLOAT,
+                     rank_info.top_rank,
+                     i,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
 
-        // Send bottom row to bottom_rank, receive bottom halo from bottom_rank
-        MPI_Isend(&speeds[i][bottom_row * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
-        MPI_Irecv(&speeds[i][bottom_halo * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
+        MPI_Sendrecv(&speeds[i][params.nx],
+                     params.nx,
+                     MPI_FLOAT,
+                     rank_info.top_rank,
+                     i,
+                     &speeds[i][(rank_info.local_ny + 1) * params.nx],
+                     params.nx,
+                     MPI_FLOAT,
+                     rank_info.bot_rank,
+                     i,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+
+        // // Send top row to top_rank, receive top halo from top_rank
+        // MPI_Isend(&speeds[i][top_row * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
+        // MPI_Irecv(&speeds[i][top_halo * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
+
+        // // Send bottom row to bottom_rank, receive bottom halo from bottom_rank
+        // MPI_Isend(&speeds[i][bottom_row * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
+        // MPI_Irecv(&speeds[i][bottom_halo * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
     }
 
-    MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    // MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
 
     accelerate_flow(params, rank_info, speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, obstacles);
     // propagate(params, cells, tmp_cells);
@@ -437,8 +463,8 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
             float u_sq = u_x * u_x + u_y * u_y;
             float constant = u_sq * inv_2_c_sq;
 
-            tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
-            tot_cells += (int)is_fluid;
+            // tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
+            // tot_cells += (int)is_fluid;
 
             /* directional velocity components */
             float u[NSPEEDS];
@@ -477,12 +503,22 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
             tmp_cells_speed_6[index] = is_obstacle * speed8 + is_fluid * (speed6 + params.omega * (d_equ[6] - speed6));
             tmp_cells_speed_7[index] = is_obstacle * speed5 + is_fluid * (speed7 + params.omega * (d_equ[7] - speed7));
             tmp_cells_speed_8[index] = is_obstacle * speed6 + is_fluid * (speed8 + params.omega * (d_equ[8] - speed8));
+
+            tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
+            tot_cells += (int)is_fluid;
         }
     }
 
     MPI_Reduce(&tot_u, &final_tot_u, 1, MPI_FLOAT, MPI_SUM, ROOT, MPI_COMM_WORLD);
     MPI_Reduce(&tot_cells, &final_tot_cells, 1, MPI_INT, MPI_SUM, ROOT, MPI_COMM_WORLD);
 
+    float avg_vel = final_tot_u / (float)final_tot_cells;
+
+    if (rank_info.rank == ROOT)
+    {
+        float avg_vel = final_tot_u / (float)final_tot_cells;
+        printf("Avg velocity = %f (tot_u=%f, tot_cells=%d)\n", avg_vel, final_tot_u, final_tot_cells);
+    }
     return final_tot_u / (float)final_tot_cells;
 }
 
@@ -497,7 +533,7 @@ int accelerate_flow(const t_param params, rank_info rank_info, float *restrict s
     /* modify the 2nd row of the grid */
     int jj = params.ny - 2;
 
-    if (jj >= rank_info.start_row && jj <= rank_info.end_row)
+    if (jj >= rank_info.start_row && jj < rank_info.end_row)
     {
         int target = jj - rank_info.start_row + 1;
 
@@ -652,13 +688,21 @@ int initialise(const char *paramfile, const char *obstaclefile,
 
     // Math makes sense. Tested
     rank_info->start_row = rank_info->rank * rows_per_rank + (rank_info->rank < extra_rows ? rank_info->rank : extra_rows);
-    rank_info->end_row = rank_info->start_row + rank_info->local_ny - 1;
+    rank_info->end_row = rank_info->start_row + rank_info->local_ny;
 
-    rank_info->top_rank = (rank_info->rank == 0) ? (rank_info->size - 1) : (rank_info->rank - 1);
-    rank_info->bot_rank = (rank_info->rank == rank_info->size - 1) ? 0 : (rank_info->rank + 1);
+    rank_info->bot_rank = (rank_info->rank == 0) ? (rank_info->size - 1) : (rank_info->rank - 1);
+    rank_info->top_rank = (rank_info->rank == rank_info->size - 1) ? 0 : (rank_info->rank + 1);
 
     // local rows plus 2 halo rows
     rank_info->total_local_cells = params->nx * (rank_info->local_ny + 2);
+
+    // printf("===== [Rank %d] =====\n", rank_info->rank);
+    // printf("    [Rank %d] Rank Above: %d\n", rank_info->rank, rank_info->top_rank);
+    // printf("    [Rank %d] Rank Below: %d\n", rank_info->rank, rank_info->bot_rank);
+
+    // printf("    [Rank %d] Start Y: %d\n", rank_info->rank, rank_info->start_row);
+    // printf("    [Rank %d] End Y: %d\n", rank_info->rank, rank_info->end_row);
+    // printf("    [Rank %d] Number of Rows: %d\n", rank_info->rank, rank_info->local_ny);
 
     /* main grid */
     *cells_ptr = (t_speed *)malloc(sizeof(t_speed) * (rank_info->total_local_cells));
