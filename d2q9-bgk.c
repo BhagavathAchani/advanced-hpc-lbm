@@ -345,27 +345,25 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
 {
     accelerate_flow(params, rank_info, speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, obstacles);
 
-    float *speeds[9] = {speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8};
-
-    MPI_Request requests[72];
-    MPI_Status statuses[72];
+    MPI_Request requests[12];
+    MPI_Status statuses[12];
     int req_idx = 0;
 
-    for (int i = 0; i < 9; i++)
-    {
-        // from bot neighbor into bot halo
-        MPI_Irecv(&speeds[i][0], params.nx, MPI_FLOAT, rank_info.bot_rank, i, MPI_COMM_WORLD, &requests[req_idx++]);
-        // from top neighbor to top halo
-        MPI_Irecv(&speeds[i][(rank_info.local_ny + 1) * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, i, MPI_COMM_WORLD, &requests[req_idx++]);
-    }
+    MPI_Irecv(&speed_2[0], params.nx, MPI_FLOAT, rank_info.bot_rank, 2, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Irecv(&speed_5[0], params.nx, MPI_FLOAT, rank_info.bot_rank, 5, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Irecv(&speed_6[0], params.nx, MPI_FLOAT, rank_info.bot_rank, 6, MPI_COMM_WORLD, &requests[req_idx++]);
 
-    for (int i = 0; i < 9; i++)
-    {
-        // Send bot row to bot neighbor
-        MPI_Send(&speeds[i][params.nx], params.nx, MPI_FLOAT, rank_info.bot_rank, i, MPI_COMM_WORLD);
-        // send top row to top neighbor
-        MPI_Send(&speeds[i][rank_info.local_ny * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, i, MPI_COMM_WORLD);
-    }
+    MPI_Irecv(&speed_4[(rank_info.local_ny + 1) * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 4, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Irecv(&speed_7[(rank_info.local_ny + 1) * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 7, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Irecv(&speed_8[(rank_info.local_ny + 1) * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 8, MPI_COMM_WORLD, &requests[req_idx++]);
+
+    MPI_Isend(&speed_4[params.nx], params.nx, MPI_FLOAT, rank_info.bot_rank, 4, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Isend(&speed_7[params.nx], params.nx, MPI_FLOAT, rank_info.bot_rank, 7, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Isend(&speed_8[params.nx], params.nx, MPI_FLOAT, rank_info.bot_rank, 8, MPI_COMM_WORLD, &requests[req_idx++]);
+
+    MPI_Isend(&speed_2[rank_info.local_ny * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 2, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Isend(&speed_5[rank_info.local_ny * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 5, MPI_COMM_WORLD, &requests[req_idx++]);
+    MPI_Isend(&speed_6[rank_info.local_ny * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, 6, MPI_COMM_WORLD, &requests[req_idx++]);
 
     MPI_Waitall(req_idx, requests, statuses);
 
