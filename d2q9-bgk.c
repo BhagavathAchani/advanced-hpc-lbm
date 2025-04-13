@@ -343,66 +343,31 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
                float *restrict tmp_cells_speed_4, float *restrict tmp_cells_speed_5, float *restrict tmp_cells_speed_6, float *restrict tmp_cells_speed_7,
                float *restrict tmp_cells_speed_8, int *obstacles)
 {
-
-    int local_ny = rank_info.local_ny;
-    int nx = params.nx;
-
-    int top_row = 1;
-    int bottom_row = local_ny;
-    int top_halo = 0;
-    int bottom_halo = local_ny + 1;
+    accelerate_flow(params, rank_info, speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, obstacles);
 
     float *speeds[9] = {speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8};
 
-    MPI_Request reqs[36];
-    int req_count = 0;
+    MPI_Request requests[72];
+    MPI_Status statuses[72];
+    int req_idx = 0;
 
     for (int i = 0; i < 9; i++)
     {
-        int tag_up = i + 10 * 0;
-        int tag_down = i + 10 * 1;
-
-        MPI_Sendrecv(&speeds[i][rank_info.local_ny * params.nx],
-                     params.nx,
-                     MPI_FLOAT,
-                     rank_info.bot_rank,
-                     i,
-                     &speeds[i][0],
-                     params.nx,
-                     MPI_FLOAT,
-                     rank_info.top_rank,
-                     i,
-                     MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-
-        MPI_Sendrecv(&speeds[i][params.nx],
-                     params.nx,
-                     MPI_FLOAT,
-                     rank_info.top_rank,
-                     i,
-                     &speeds[i][(rank_info.local_ny + 1) * params.nx],
-                     params.nx,
-                     MPI_FLOAT,
-                     rank_info.bot_rank,
-                     i,
-                     MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-
-        // // Send top row to top_rank, receive top halo from top_rank
-        // MPI_Isend(&speeds[i][top_row * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
-        // MPI_Irecv(&speeds[i][top_halo * nx], nx, MPI_FLOAT, rank_info.top_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
-
-        // // Send bottom row to bottom_rank, receive bottom halo from bottom_rank
-        // MPI_Isend(&speeds[i][bottom_row * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_down, MPI_COMM_WORLD, &reqs[req_count++]);
-        // MPI_Irecv(&speeds[i][bottom_halo * nx], nx, MPI_FLOAT, rank_info.bot_rank, tag_up, MPI_COMM_WORLD, &reqs[req_count++]);
+        // from bot neighbor into bot halo
+        MPI_Irecv(&speeds[i][0], params.nx, MPI_FLOAT, rank_info.bot_rank, i, MPI_COMM_WORLD, &requests[req_idx++]);
+        // from top neighbor to top halo
+        MPI_Irecv(&speeds[i][(rank_info.local_ny + 1) * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, i, MPI_COMM_WORLD, &requests[req_idx++]);
     }
 
-    // MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    for (int i = 0; i < 9; i++)
+    {
+        // Send bot row to bot neighbor
+        MPI_Send(&speeds[i][params.nx], params.nx, MPI_FLOAT, rank_info.bot_rank, i, MPI_COMM_WORLD);
+        // send top row to top neighbor
+        MPI_Send(&speeds[i][rank_info.local_ny * params.nx], params.nx, MPI_FLOAT, rank_info.top_rank, i, MPI_COMM_WORLD);
+    }
 
-    accelerate_flow(params, rank_info, speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, obstacles);
-    // propagate(params, cells, tmp_cells);
-    // rebound(params, cells, tmp_cells, obstacles);
-    // collision(params, cells, tmp_cells, obstacles);
+    MPI_Waitall(req_idx, requests, statuses);
 
     // const float c_sq = 1.f / 3.f; /* square of speed of sound */
     const float w0 = 4.f / 9.f;  /* weighting factor */
@@ -415,19 +380,13 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
 
     int tot_cells = 0; /* no. of cells used in calculation */
     float tot_u = 0.f; /* accumulated magnitudes of velocity for each cell */
-    int final_tot_cells = 0;
-    float final_tot_u = 0.f;
 
-    // #pragma omp parallel for reduction(+ : tot_u, tot_cells)
     for (int jj = 1; jj < rank_info.local_ny + 1; jj++)
     {
         int y_n = (jj + 1) % params.ny;
         int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
 
-        // #pragma omp simd reduction(+ : tot_u, tot_cells) aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8, \
-//                                                              tmp_cells_speed_0, tmp_cells_speed_1, tmp_cells_speed_2, tmp_cells_speed_3,  \
-//                                                              tmp_cells_speed_4, tmp_cells_speed_5, tmp_cells_speed_6, tmp_cells_speed_7,  \
-//                                                              tmp_cells_speed_8 : 64) simdlen(8)
+#pragma omp simd aligned(speed_1, speed_3, speed_5, speed_6, speed_7, speed_8, obstacles : 64)
         for (int ii = 0; ii < params.nx; ii++)
         {
             /* determine indices of axis-direction neighbours
@@ -462,9 +421,6 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
             float u_y = (speed2 + speed5 + speed6 - (speed4 + speed7 + speed8)) * inv_local_density;
             float u_sq = u_x * u_x + u_y * u_y;
             float constant = u_sq * inv_2_c_sq;
-
-            // tot_u += is_fluid * sqrtf((u_x * u_x) + (u_y * u_y));
-            // tot_cells += (int)is_fluid;
 
             /* directional velocity components */
             float u[NSPEEDS];
@@ -509,16 +465,12 @@ float timestep(const t_param params, rank_info rank_info, float *restrict speed_
         }
     }
 
+    int final_tot_cells = 0;
+    float final_tot_u = 0.f;
+
     MPI_Reduce(&tot_u, &final_tot_u, 1, MPI_FLOAT, MPI_SUM, ROOT, MPI_COMM_WORLD);
     MPI_Reduce(&tot_cells, &final_tot_cells, 1, MPI_INT, MPI_SUM, ROOT, MPI_COMM_WORLD);
 
-    float avg_vel = final_tot_u / (float)final_tot_cells;
-
-    if (rank_info.rank == ROOT)
-    {
-        float avg_vel = final_tot_u / (float)final_tot_cells;
-        printf("Avg velocity = %f (tot_u=%f, tot_cells=%d)\n", avg_vel, final_tot_u, final_tot_cells);
-    }
     return final_tot_u / (float)final_tot_cells;
 }
 
@@ -537,7 +489,7 @@ int accelerate_flow(const t_param params, rank_info rank_info, float *restrict s
     {
         int target = jj - rank_info.start_row + 1;
 
-        // #pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
+#pragma omp simd aligned(speed_0, speed_1, speed_2, speed_3, speed_4, speed_5, speed_6, speed_7, speed_8 : 64)
         for (int ii = 0; ii < params.nx; ii++)
         {
             int index = ii + target * params.nx;
@@ -566,10 +518,11 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
 
     /* initialise */
     tot_u = 0.f;
+
     /* loop over all non-blocked cells */
-    // #pragma omp for
     for (int jj = 0; jj < params.ny; jj++)
     {
+#pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
             /* ignore occupied cells */
@@ -749,7 +702,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 
     for (int jj = 1; jj < rank_info->local_ny + 1; jj++)
     {
-        // #pragma omp simd
+#pragma omp simd
         for (int ii = 0; ii < params->nx; ii++)
         {
             int index = ii + jj * params->nx;
@@ -869,7 +822,7 @@ float total_density(const t_param params, t_speed *cells)
 
     for (int jj = 0; jj < params.ny; jj++)
     {
-        // #pragma omp simd
+#pragma omp simd
         for (int ii = 0; ii < params.nx; ii++)
         {
             int index = ii + jj * params.nx;
