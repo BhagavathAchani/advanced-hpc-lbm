@@ -1,141 +1,91 @@
-# HPC Coursework
+# Lattice Boltzmann Fluid Simulation (CPU & MPI Optimised)
 
-Base coursework for the Advanced High Performance Computing class.
+High-performance implementation of a D2Q9-BGK Lattice Boltzmann Method (LBM) fluid simulation, developed as part of an Advanced High Performance Computing course at the University of Bristol.
 
-* Source code is in the `d2q9-bgk.c` file
-* Results checking scripts are in the `check/` directory
+This repository focuses on CPU-side performance engineering, including serial optimisation, SIMD vectorisation, NUMA-aware OpenMP parallelism, and distributed-memory scaling with MPI. A separate repository contains the CUDA GPU implementation.
 
-## Compiling and running
+## Key Contributions
 
-To compile type `make`. Editing the values for `CC` and `CFLAGS` in the Makefile can be used to enable different compiler options or use a different compiler. These can also be passed on the command line:
+* Optimised the serial LBM solver using loop fusion, arithmetic simplification, and data-layout refactoring, significantly reducing instruction count and cache misses.
+* Applied SIMD vectorisation (AVX) using OpenMP SIMD directives, aligned memory allocation, and `restrict` pointers to maximise single-core throughput.
+* Used Roofline modelling and cache-level profiling to identify memory-bandwidth bottlenecks and guide optimisation decisions.
+* Implemented NUMA-aware OpenMP parallelisation, achieving strong scaling up to 28 CPU cores.
+* Developed a 1D MPI domain decomposition with halo cells and non-blocking communication (MPI_Isend / MPI_Irecv), scaling simulations to 112 CPU cores across multiple nodes.
+* Achieved up to 98.37% reduction in compute time for a 2048×2048 grid compared to the unoptimised serial baseline.
 
-    $ make CFLAGS="-O3 -fopenmp -DDEBUG"
+## Performance Highlights and Results
 
-Input parameter and obstacle files are all specified on the command line of the `d2q9-bgk` executable.
+### Serial, SIMD, and OpenMP Performance
 
-Usage:
+| Method | 128×128 | 128×256 | 256×256 | 1024×1024 |
+|--------|---------|---------|---------|-----------|
+| Serial | 12.3 s | 20.2 s | 74.2 s | 345.9 s |
+| Serial + Vectorised | 4.7 s | 10.5 s | 36.0 s | 201.5 s |
+| OpenMP (28 cores) | 0.64 s | 0.89 s | 2.9 s | 13.1 s |
 
-    $ ./d2q9-bgk <paramfile> <obstaclefile>
-eg:
+**Table 1:** Execution times for serial, SIMD-vectorised, and OpenMP parallelised versions of the D2Q9-BGK Lattice Boltzmann simulation.
 
-    $ ./d2q9-bgk input_256x256.params obstacles_256x256.dat
+### MPI Scaling and Performance Improvements
 
-## Checking results
+| Grid Size | Compute Time (MPI) | Serial Optimisation (%) | MPI Ballpark (%) |
+|-----------|-------------------|------------------------|------------------|
+| 128×128 | 0.565 s | -92.04% | -10.31% |
+| 128×256 | 0.556 s | -96.14% | -26.81% |
+| 256×256 | 1.513 s | -97.37% | -43.95% |
+| 1024×1024 | 3.142 s | -98.73% | -43.76% |
+| 2048×2048 | 7.927 s | -98.37% | -47.15% |
 
-An automated result checking function is provided that requires you to load a particular Python module (`module load languages/python/3.12.3`). Running `make check` will check the output file (average velocities and final state) against some reference results. By default, it should look something like this:
+**Table 2:** MPI compute times and percentage improvements relative to baseline serial performance.
 
-    $ make check
-    python check/check.py --ref-av-vels-file=check/128x128.av_vels.dat --ref-final-state-file=check/128x128.final_state.dat --av-vels-file=./av_vels.dat --final-state-file=./final_state.dat
-    Total difference in av_vels : 5.270812566515E-11
-    Biggest difference (at step 1219) : 1.000241556248E-14
-      1.595203170657E-02 vs. 1.595203170658E-02 = 6.3e-11%
+## Build and Run
 
-    Total difference in final_state : 5.962977334129E-11
-    Biggest difference (at coord (6,2)) : 1.000588500943E-14
-      3.329122639178E-02 vs. 3.329122639179E-02 = 3e-11%
-
-    Both tests passed!
-
-This script takes both the reference results and the results to check (both average velocities and final state). This is also specified in the makefile and can be changed like the other options:
-
-    $ make check REF_AV_VELS_FILE=check/128x256.av_vels.dat REF_FINAL_STATE_FILE=check/128x256.final_state.dat
-    python check/check.py --ref-av-vels-file=check/128x256.av_vels.dat --ref-final-state-file=check/128x256.final_state.dat --av-vels-file=./av_vels.dat --final-state-file=./final_state.dat
-    ...
-
-All the options for this script can be examined by passing the --help flag to it.
-
-    $ python check/check.py --help
-    usage: check.py [-h] [--tolerance TOLERANCE] --ref-av-vels-file
-                    REF_AV_VELS_FILE --ref-final-state-file REF_FINAL_STATE_FILE
-    ...
-
-
-## Running on BlueCrystal Phase 4
-
-When you wish to submit a job to the queuing system on BlueCrystal, you should use the job submission script provided.
-
-    $ sbatch job_submit_d2q9-bgk
-
-This will dispatch a job to the queue, which you can monitor using the
-`squeue` command:
-
-    $ squeue -u $USER
-
-When finished, the output from your job will be in a file called
-`d2q9-bgk.out`:
-
-    $ less d2q9-bgk.out
-
-If you wish to run a different set of input parameters, you should
-modify `job_submit_d2q9-bgk` to update the value assigned to `options`.
-
-## Checking submission content
-
-Before handing in the coursework, you can use the `check_submission.sh` script to make sure that your code builds in a clean environment. This will reduce the chances of the automarker failing to build or run your code.
-
-To use the script, simply run it from the directory containing the files you intend to submit:
-
-    $ /path/to/check_submission.sh
-
-The script will:
-
-1. Unload all the modules currently loaded.
-2. Load your modules and environment variables specified in `env.sh`.
-3. Use `make` to build your code and verify that an executable with the expected name is produced.
-
-If the submission checking script prints any errors, you should try to address those before you hand in. 
-
-Note that `check_submission.sh` does _not_ run your code, and so you _cannot_ verify that the results produced by your application validate just by running this script. You should check the correctness of your results separately, e.g. using `make check`.
-
-
-# Serial output for sample inputs
-Run times were taken on a Phase 4 node using the base (gcc) compiler and base compiler flags as found in the Makefile:
-
-- 128x128
-```
-./d2q9-bgk  input_128x128.params obstacles_128x128.dat
-==done==
-Reynolds number:                9.751927375793E+00
-Elapsed Init time:                      0.008549 (s)
-Elapsed Compute time:                   32.706913 (s)
-Elapsed Collate time:                   0.000000 (s)
-Elapsed Total time:                     32.715462 (s)
+### Compilation
+```bash
+make CFLAGS="-O3 -fopenmp"
 ```
 
-- 128x256
-```
-==done==
-Reynolds number:                3.715003967285E+01
-Elapsed Init time:                      0.026452 (s)
-Elapsed Compute time:                   65.973017 (s)
-Elapsed Collate time:                   0.000000 (s)
-Elapsed Total time:                     65.999469 (s)
+Compiler flags can be modified in the `Makefile` to enable architecture-specific optimisations.
+
+### Execution
+```bash
+./d2q9-bgk <paramfile> <obstaclefile>
 ```
 
-- 256x256
-```
-./d2q9-bgk  input_256x256.params obstacles_256x256.dat
-==done==
-Reynolds number:                1.005141162872E+01
-Elapsed Init time:                      0.018062 (s)
-Elapsed Compute time:                   263.480558 (s)
-Elapsed Collate time:                   0.000000 (s)
-Elapsed Total time:                     263.498620 (s)
+Example:
+```bash
+./d2q9-bgk input_256x256.params obstacles_256x256.dat
 ```
 
-- 1024x1024
-```
-./d2q9-bgk  input_1024x1024.params obstacles_1024x1024.dat
-==done==
-Reynolds number:                3.375851392746E+00
-Elapsed Init time:                      0.013054 (s)
-Elapsed Compute time:                   1097.257147 (s)
-Elapsed Collate time:                   0.000000 (s)
-Elapsed Total time:                     1097.270201 (s)
+### MPI Execution
+
+To run the distributed version using MPI:
+```bash
+mpirun -np <num_ranks> ./d2q9-bgk <paramfile> <obstaclefile>
 ```
 
-# Visualisation
+The domain is decomposed along one spatial dimension, with halo exchange performed between neighbouring ranks.
 
-You can view the final state of the simulation by creating a .png image file using a provided Gnuplot script:
+## Correctness and Validation
 
-    $ gnuplot final_state.plt
+Simulation results are validated using the provided Python checking scripts:
+```bash
+make check
+```
+
+The checker compares average velocities and final lattice state against reference solutions, ensuring correctness within numerical tolerance.
+
+## Tooling and Platforms
+
+* Languages: C++
+* Parallelism: OpenMP, MPI (OpenMPI)
+* Vectorisation: SIMD
+* Profiling & Analysis: `perf`, Roofline modelling
+* Platforms: University of Bristol BlueCrystal Phase 4 (Intel Broadwell CPUs)
+
+## Related Work
+
+* CUDA GPU implementation: see separate repository
+
+## Note
+
+This repository was originally forked from coursework starter code. All performance optimisations, parallelisation strategies, and scalability improvements were implemented independently.
